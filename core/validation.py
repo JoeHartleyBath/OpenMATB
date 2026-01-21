@@ -10,6 +10,8 @@ from core.constants import COLORS as C, PATHS as P
 from core.joystick import joykey
 from pyglet.window import key as winkey
 
+import re
+
 def is_string(x):
     # Should always be True as we are reading parameters from a text file
     # If a simple string is accepted, hence any input should be correct

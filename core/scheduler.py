@@ -261,6 +261,7 @@ class Scheduler:
 
     def exit(self):
         logger.log_manual_entry('end')
+        logger.finalize()
         self.event_loop.exit()
         Window.MainWindow.close() # needed for windows clean exit
         sys.exit(0)

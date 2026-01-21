@@ -10,6 +10,7 @@ import json
 import os
 import platform
 import sys
+from pathlib import Path
 
 from core.constants import CONFIG, OUTPUT_BASE_DIR, OPENMATB_ROOT, PATHS, REPLAY_MODE
 from core.utils import find_the_first_available_session_number, find_the_last_session_number
@@ -22,6 +23,9 @@ class Logger:
         self.maxfloats = 6  # Time logged at microsecond precision
         self.session_id = None
         self.lsl = None
+        self._lsl_ever_enabled = False
+        self._finalized = False
+        self.manifest_path = None
 
         self.session_id = find_the_first_available_session_number()
         self.mode = 'w'
@@ -41,10 +45,11 @@ class Logger:
 
 
     def _write_manifest(self):
-        manifest_dir = OUTPUT_BASE_DIR.joinpath('manifests')
-        manifest_dir.mkdir(parents=True, exist_ok=True)
+        if self.path is None:
+            raise RuntimeError('Cannot write manifest before session CSV path is set')
 
-        manifest_path = manifest_dir.joinpath(self.path.stem + '.manifest.json')
+        manifest_path = self.path.with_suffix('.manifest.json')
+        self.manifest_path = manifest_path
 
         scenario_path = None
         try:
@@ -52,24 +57,49 @@ class Logger:
         except Exception:
             scenario_path = None
 
+        scenario_name = None
+        if scenario_path:
+            scenario_name = Path(scenario_path).stem
+
         openmatb_version = None
         try:
             openmatb_version = OPENMATB_ROOT.joinpath('VERSION').read_text(encoding='utf-8').strip()
         except Exception:
             openmatb_version = None
 
+        repo_commit = os.environ.get('OPENMATB_REPO_COMMIT')
+        submodule_commit = os.environ.get('OPENMATB_SUBMODULE_COMMIT')
+        if not repo_commit or not submodule_commit:
+            raise RuntimeError(
+                'Missing required git commit identifiers in environment: '
+                'OPENMATB_REPO_COMMIT and/or OPENMATB_SUBMODULE_COMMIT'
+            )
+
+        output_dir_abs = str(Path(OUTPUT_BASE_DIR).resolve())
+        event_log_path_abs = str(Path(self.path).resolve())
+
         manifest = {
             'manifest_version': 1,
             'created_at_local': self.datetime.isoformat(timespec='seconds'),
+            'started_at_local': self.datetime.isoformat(timespec='seconds'),
+            'ended_at_local': None,
+            'repo_commit': repo_commit,
+            'submodule_commit': submodule_commit,
+            'scenario_name': scenario_name,
+            'participant_id': os.environ.get('OPENMATB_PARTICIPANT') or os.environ.get('OPENMATB_PARTICIPANT_ID'),
+            'session_id': os.environ.get('OPENMATB_SESSION') or os.environ.get('OPENMATB_SESSION_ID'),
+            'lsl_enabled': False,
+            'output_dir': output_dir_abs,
+            'event_log_path': event_log_path_abs,
             'logger_session_id': int(self.session_id) if self.session_id is not None else None,
             'openmatb': {
                 'version': openmatb_version,
                 'scenario_path': scenario_path,
             },
             'paths': {
-                'output_base_dir': str(OUTPUT_BASE_DIR),
-                'sessions_dir': str(PATHS['SESSIONS']),
-                'session_csv': str(self.path),
+                'output_base_dir': output_dir_abs,
+                'sessions_dir': str(Path(PATHS['SESSIONS']).resolve()),
+                'session_csv': event_log_path_abs,
                 'scenario_errors_log': str(PATHS['SCENARIO_ERRORS']),
             },
             'environment': {
@@ -88,12 +118,36 @@ class Logger:
             },
         }
 
-        try:
-            with open(manifest_path, 'w', encoding='utf-8') as f:
-                json.dump(manifest, f, indent=2, ensure_ascii=False)
-        except Exception:
-            # Logging must never fail because the manifest could not be written.
-            pass
+        self._atomic_write_json(manifest_path, manifest)
+
+
+    def _atomic_write_json(self, path: Path, payload: dict):
+        path.parent.mkdir(parents=True, exist_ok=True)
+        tmp_path = path.with_suffix(path.suffix + '.tmp')
+        with open(tmp_path, 'w', encoding='utf-8', newline='') as f:
+            json.dump(payload, f, indent=2, ensure_ascii=False)
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(tmp_path, path)
+
+
+    def finalize(self):
+        if REPLAY_MODE:
+            return
+        if self._finalized:
+            return
+        if self.manifest_path is None:
+            raise RuntimeError('Manifest path is not set; cannot finalize run manifest')
+
+        self._finalized = True
+
+        with open(self.manifest_path, 'r', encoding='utf-8') as f:
+            manifest = json.load(f)
+
+        manifest['ended_at_local'] = datetime.now().isoformat(timespec='seconds')
+        manifest['lsl_enabled'] = bool(self._lsl_ever_enabled or (self.lsl is not None))
+
+        self._atomic_write_json(self.manifest_path, manifest)
 
     # TODO: see if we can/should merge record_* methods into one
     def record_event(self, event):
@@ -198,6 +252,7 @@ class Logger:
                             row_dict[k] = v
                     self.writer.writerow(row_dict)
                     if self.lsl is not None:
+                        self._lsl_ever_enabled = True
                         self.lsl.push(';'.join([str(r) for r in row_dict.values()]))
                 self.empty_queue()
 

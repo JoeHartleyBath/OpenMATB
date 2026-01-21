@@ -5,6 +5,7 @@
 import sys
 from pyglet.graphics import OrderedGroup as Group
 from pathlib import Path
+import os
 import configparser
 
 REPLAY_MODE = len(sys.argv) > 1 and sys.argv[1] == '-r'
@@ -35,13 +36,40 @@ BFLIM = 15
 # Ignore these plugins arguments
 DEPRECATED = ['pumpstatus', 'end', 'cutofffrequency', 'equalproportions']
 
-PATHS = {k.upper():Path('.', k) for k in ['plugins', 'sessions']}
-PATHS.update({k.upper():Path('.', 'includes', k)
+OPENMATB_ROOT = Path(__file__).resolve().parents[1]
+
+
+def _default_output_root() -> Path:
+    if os.name == 'nt':
+        return Path(r"C:\\data\\adaptive_matb")
+    return Path.home() / 'data' / 'adaptive_matb'
+
+
+def _resolve_output_base_dir() -> Path:
+    output_root_raw = os.environ.get('OPENMATB_OUTPUT_ROOT')
+    output_subdir_raw = os.environ.get('OPENMATB_OUTPUT_SUBDIR')
+
+    output_root = Path(output_root_raw) if output_root_raw else _default_output_root()
+    output_subdir = Path(output_subdir_raw) if output_subdir_raw else Path('openmatb')
+
+    if output_subdir.is_absolute():
+        return output_subdir
+    return output_root / output_subdir
+
+
+OUTPUT_BASE_DIR = _resolve_output_base_dir()
+OUTPUT_BASE_DIR.mkdir(parents=True, exist_ok=True)
+
+PATHS = {
+    'PLUGINS': OPENMATB_ROOT / 'plugins',
+    'SESSIONS': OUTPUT_BASE_DIR / 'sessions',
+}
+PATHS.update({k.upper(): OPENMATB_ROOT / 'includes' / k
               for k in ['img', 'instructions', 'scenarios', 'sounds', 'questionnaires']})
 
-[path.mkdir(parents=False, exist_ok=True) for p, path in PATHS.items() if path.exists() is False]
-PATHS['SCENARIO_ERRORS'] = Path('.', 'last_scenario_errors.log')
+PATHS['SESSIONS'].mkdir(parents=True, exist_ok=True)
+PATHS['SCENARIO_ERRORS'] = OUTPUT_BASE_DIR / 'last_scenario_errors.log'
 
 # Read the configuration file
 CONFIG = configparser.ConfigParser()
-CONFIG.read(PATHS['PLUGINS'].parent.joinpath('config.ini'))
+CONFIG.read(OPENMATB_ROOT.joinpath('config.ini'))

@@ -6,7 +6,12 @@ from collections import namedtuple
 from time import perf_counter
 from datetime import datetime
 from csv import DictWriter
-from core.constants import PATHS, REPLAY_MODE
+import json
+import os
+import platform
+import sys
+
+from core.constants import CONFIG, OUTPUT_BASE_DIR, OPENMATB_ROOT, PATHS, REPLAY_MODE
 from core.utils import find_the_first_available_session_number, find_the_last_session_number
 
 class Logger:
@@ -32,6 +37,63 @@ class Logger:
                                 f'{self.session_id}_{self.datetime.strftime("%y%m%d_%H%M%S")}.csv')
             self.path.parent.mkdir(parents=True, exist_ok=True)
             self.open()
+            self._write_manifest()
+
+
+    def _write_manifest(self):
+        manifest_dir = OUTPUT_BASE_DIR.joinpath('manifests')
+        manifest_dir.mkdir(parents=True, exist_ok=True)
+
+        manifest_path = manifest_dir.joinpath(self.path.stem + '.manifest.json')
+
+        scenario_path = None
+        try:
+            scenario_path = CONFIG.get('Openmatb', 'scenario_path', fallback=None)
+        except Exception:
+            scenario_path = None
+
+        openmatb_version = None
+        try:
+            openmatb_version = OPENMATB_ROOT.joinpath('VERSION').read_text(encoding='utf-8').strip()
+        except Exception:
+            openmatb_version = None
+
+        manifest = {
+            'manifest_version': 1,
+            'created_at_local': self.datetime.isoformat(timespec='seconds'),
+            'logger_session_id': int(self.session_id) if self.session_id is not None else None,
+            'openmatb': {
+                'version': openmatb_version,
+                'scenario_path': scenario_path,
+            },
+            'paths': {
+                'output_base_dir': str(OUTPUT_BASE_DIR),
+                'sessions_dir': str(PATHS['SESSIONS']),
+                'session_csv': str(self.path),
+                'scenario_errors_log': str(PATHS['SCENARIO_ERRORS']),
+            },
+            'environment': {
+                'os': os.name,
+                'platform': platform.platform(),
+                'python_executable': sys.executable,
+                'python_version': sys.version,
+            },
+            'identifiers': {
+                'participant': os.environ.get('OPENMATB_PARTICIPANT') or os.environ.get('OPENMATB_PARTICIPANT_ID'),
+                'session': os.environ.get('OPENMATB_SESSION') or os.environ.get('OPENMATB_SESSION_ID'),
+            },
+            'output_env': {
+                'OPENMATB_OUTPUT_ROOT': os.environ.get('OPENMATB_OUTPUT_ROOT'),
+                'OPENMATB_OUTPUT_SUBDIR': os.environ.get('OPENMATB_OUTPUT_SUBDIR'),
+            },
+        }
+
+        try:
+            with open(manifest_path, 'w', encoding='utf-8') as f:
+                json.dump(manifest, f, indent=2, ensure_ascii=False)
+        except Exception:
+            # Logging must never fail because the manifest could not be written.
+            pass
 
     # TODO: see if we can/should merge record_* methods into one
     def record_event(self, event):

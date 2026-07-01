@@ -2,6 +2,7 @@
 # Institut National Universitaire Champollion (Albi, France).
 # License : CeCILL, version 2.1 (see the LICENSE file)
 
+import os
 from pathlib import Path
 from pyglet.window import key as winkey
 from core.widgets import Simpletext, SimpleHTML, Frame
@@ -444,6 +445,8 @@ class BlockingPlugin(AbstractPlugin):
     def create_widgets(self):
         super().create_widgets()
         self.go_to_next_slide = True  # So the first slide appears as soon as possible
+        self.blocking = True          # Re-block the scenario timer on every (re-)start
+        self.slides = list()          # Clear any stale slides from a previous run
 
         # Create an input path if relevant
 
@@ -477,12 +480,24 @@ class BlockingPlugin(AbstractPlugin):
                 self.current_slide = self.slides[0]; del self.slides[0]
                 self.make_slide_graphs()
                 self.show()
+                # If keypress is disabled (e.g. fixation cross), unblock the
+                # scenario timer so timed events (LSL markers, stop commands)
+                # fire on schedule — but leave the plugin alive and visible
+                # so the slide stays on screen until the scenario stops it.
+                if self.parameters['allowkeypress'] == False:
+                    self.blocking = False
+                # In verification mode (headless/automated runs), auto-advance
+                # through instruction slides so the session doesn't block on SPACE.
+                elif os.environ.get('OPENMATB_VERIFICATION') == '1':
+                    self.go_to_next_slide = True
             else:
+                # No slides left: participant has pressed SPACE on the last slide.
+                # Unblock the scenario clock now that reading is done.
                 if self.stop_on_end:
                     self.stop()
                 else:
                     self.hide()
-                    self.blocking = False
+                self.blocking = False
 
 
     def make_slide_graphs(self):
@@ -515,6 +530,9 @@ class BlockingPlugin(AbstractPlugin):
         if self.parameters['allowkeypress'] == True:
             super().on_key_press(symbol, modifiers)
 
+    def on_key_release(self, symbol, modifiers):
+        if self.parameters['allowkeypress'] == True:
+            super().on_key_release(symbol, modifiers)
 
     def do_on_key(self, keystr, state, emulate=False):
         keystr = super().do_on_key(keystr, state, emulate)

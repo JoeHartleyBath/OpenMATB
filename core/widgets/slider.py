@@ -110,9 +110,14 @@ class Slider(AbstractWidget):
 
 
     def set_value_label(self):
-        if str(self.groove_value) == self.vertex['value'].text:
+        # Display the rounded integer, matching the questionnaire file's
+        # declared min/max/default (always integers) and record_state's
+        # existing rounding below -- otherwise this shows the raw continuous
+        # drag position (e.g. "6.234971") instead of a clean value.
+        rounded_text = str(int(round(self.groove_value)))
+        if rounded_text == self.vertex['value'].text:
             return
-        self.vertex['value'].text = str(self.groove_value)
+        self.vertex['value'].text = rounded_text
 
 
     #TODO: hide cursor when finished
@@ -155,7 +160,10 @@ class Slider(AbstractWidget):
 
 
     def get_value(self):
-        return self.groove_value
+        # Rounded to match the on-screen display and record_state's rounding
+        # (update_groove_value below) -- the final logged questionnaire score
+        # should never carry raw continuous-drag float noise (e.g. 62.3487).
+        return int(round(self.groove_value))
 
 
     def update_cursor_appearance(self):

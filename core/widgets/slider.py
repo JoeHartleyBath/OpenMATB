@@ -13,7 +13,7 @@ import math
 
 class Slider(AbstractWidget):
     def __init__(self, name, container, title, label_min, label_max,
-                 value_min, value_max, value_default, rank, draw_order=1):
+                 value_min, value_max, value_default, rank, draw_order=1, value_step=None):
         super().__init__(name, container)
 
         self.title = title
@@ -24,9 +24,23 @@ class Slider(AbstractWidget):
         self.value_default = value_default
         self.draw_order = draw_order
 
+        # When set, responses snap to multiples of value_step above value_min, so a
+        # Likert-type scale (e.g. the IMI's 1-7) cannot return an intermediate value.
+        # Left as None the slider stays continuous, which is what the NASA-TLX uses.
+        self.value_step = value_step
+
         self.rank = rank
         self.groove_value = self.value_default
         self.hover = False
+
+        # Whether the participant has engaged with this slider at all. A screen can
+        # be gated on this so untouched defaults are never logged as responses.
+        self.touched = False
+
+        # Sliders push mouse handlers on the main window and are never popped, so a
+        # slider belonging to a superseded questionnaire screen would keep reacting
+        # to clicks. detach() makes such a slider inert.
+        self.active = True
 
         # Enhance smoothing mode
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
@@ -121,18 +135,27 @@ class Slider(AbstractWidget):
 
 
     def on_mouse_press(self, x, y, button, modifiers):
+        if not self.active:
+            return
         if self.coordinates_in_groove_container(x, y) and self.hover is False:
             self.hover = True
+            # A press on the groove counts as touched, so a participant who wants to
+            # keep the default value can still confirm it deliberately.
+            self.touched = True
             self.update_cursor_appearance()
 
 
     def on_mouse_release(self, x, y, button, modifiers):
+        if not self.active:
+            return
         if self.hover is True:
             self.hover = False
             self.update_cursor_appearance()
 
 
     def on_mouse_drag(self, x, y, dx, dy, button, modifiers):
+        if not self.active:
+            return
         if self.hover is True:
             x_min = self.containers['allgroove'].l
             x_max = self.containers['allgroove'].l + self.containers['allgroove'].w
@@ -141,11 +164,25 @@ class Slider(AbstractWidget):
             self.update_groove_value(ratio)
 
 
+    def snap_value(self, value):
+        """Round a raw value to the nearest allowed step (identity if unstepped)."""
+        if not self.value_step:
+            return value
+        steps = round((value - self.value_min) / self.value_step)
+        snapped = self.value_min + steps * self.value_step
+        # Keep whole-number scales integral, so the value reads '4' and not '4.0'
+        if float(self.value_step).is_integer() and float(self.value_min).is_integer():
+            return int(snapped)
+        return snapped
+
+
     def update_groove_value(self, ratio):
         val = float(ratio * (self.value_max - self.value_min) + self.value_min)
+        val = self.snap_value(val)
         if math.isclose(val, self.groove_value):
             return
         self.groove_value = val
+        self.touched = True
         self.logger.record_state(self.name, 'value', str(int(round(val))))
         self.update()
 
@@ -156,6 +193,15 @@ class Slider(AbstractWidget):
 
     def get_value(self):
         return self.groove_value
+
+
+    def is_touched(self):
+        return self.touched is True
+
+
+    def detach(self):
+        """Stop reacting to mouse events (used when a screen is superseded)."""
+        self.active = False
 
 
     def update_cursor_appearance(self):

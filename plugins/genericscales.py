@@ -7,6 +7,21 @@ from core.widgets import Simpletext, Slider, Frame
 from core.constants import FONT_SIZES as F, PATHS as P, COLORS as C, REPLAY_MODE
 from re import match as regex_match
 
+#: Horizontal centre of a Slider's groove, as a proportion of the row width.
+#:
+#: Slider.set_sub_containers lays a row out as
+#:     [min 0.133w][groove 0.6w][max 0.133w][value 0.133w]
+#: -- one gutter to the left of the groove, two to the right -- so the groove's
+#: centre sits at 0.4333w, not 0.5w. A question container built at full width
+#: centres its text at 0.5w, which put every question 6.7% of the row width to
+#: the RIGHT of the slider it labels. This is derived from the same expression
+#: the slider uses rather than hard-coded, so the two cannot drift apart.
+#:
+#: Keep in step with Slider.set_sub_containers' slider_width default.
+_SLIDER_WIDTH = 0.6
+_GROOVE_CENTRE = (1 - _SLIDER_WIDTH) / 3 + _SLIDER_WIDTH / 2
+
+
 class Genericscales(BlockingPlugin):
     def __init__(self):
         super().__init__()
@@ -70,7 +85,14 @@ class Genericscales(BlockingPlugin):
             scale_container = all_scales_container.reduce_and_translate(
                 height=height_in_prop, y=1-(1/(len(scale_list)))*l)
 
-            text_container = scale_container.reduce_and_translate(1, 0.4, 0, 1)
+            # Width 2 x _GROOVE_CENTRE, flush left (x=0), so the container spans
+            # [0, 2*0.4333] and its centre lands on the groove's centre. Simpletext
+            # anchors at x=0.5 of its container, so the question now sits directly
+            # over the slider it labels. Hit-boxes and recorded values are
+            # untouched -- only the label container moves. Applies to TLX, IMI and
+            # the post-block checks together, since all three use this plugin.
+            text_container = scale_container.reduce_and_translate(
+                2 * _GROOVE_CENTRE, 0.4, 0, 1)
             slider_container = scale_container.reduce_and_translate(1, 0.6, 0, 0)
 
             if regex_match(self.regex_scale_pattern, scale):

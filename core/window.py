@@ -77,7 +77,13 @@ class Window(Window):
         screens = get_display().get_screens()
         if screen_index + 1 > len(screens):
             screen = screens[-1]
-            errors.add_error(_(f"In config.ini, the specified screen index exceeds the number of available screens (%s). Last screen selected.") % len(get_display().get_screens()))
+            # Qualified through the module, not `from core.error import errors`.
+            # core/error.py does `from core.window import Window` at import time,
+            # so a from-import here closes the cycle and raises ImportError while
+            # core.error is still initialising. Deferring the attribute lookup to
+            # call time is what breaks it: by the time this line runs, core.error
+            # is fully loaded and `errors` is bound.
+            core.error.errors.add_error(_(f"In config.ini, the specified screen index exceeds the number of available screens (%s). Last screen selected.") % len(get_display().get_screens()))
         else:
             screen = screens[screen_index]
 

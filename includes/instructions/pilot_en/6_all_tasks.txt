@@ -1,0 +1,4 @@
+<center><h1>Putting it All Together</h1></center>
+<center><p>Now all tasks will run simultaneously for a short practice period.</p></center>
+<center><p>Do your best to attend to all of them.</p></center>
+<center><p><b>Communications reminder:</b> press <b>ENTER</b> to submit your response.</p></center>

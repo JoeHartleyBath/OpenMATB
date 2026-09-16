@@ -1,0 +1,3 @@
+<center><h1>Task 1: System Monitoring</h1></center>
+<center><p>The <b>left light</b> should stay <b>green</b>. The <b>right light</b> should stay <b>off</b>.</p></center>
+<center><p>Reset any failures using the labelled F key.</p></center>

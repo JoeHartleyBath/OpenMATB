@@ -1,0 +1,8 @@
+# Intrinsic Motivation Inventory -- page 2 of 3 (English)
+# See imi_page1_en.txt for the format and scoring notes.
+
+IMI_PC3;After working at this activity for awhile, I felt pretty competent.;Not at all true/Very true;1/7/4/1
+IMI_EI3;I tried very hard on this activity.;Not at all true/Very true;1/7/4/1
+IMI_PT3_R;I was very relaxed in doing these.;Not at all true/Very true;1/7/4/1
+IMI_PC4;I am satisfied with my performance at this task.;Not at all true/Very true;1/7/4/1
+IMI_EI4;It was important to me to do well at this task.;Not at all true/Very true;1/7/4/1

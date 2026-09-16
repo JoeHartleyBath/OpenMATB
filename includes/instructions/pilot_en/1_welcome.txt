@@ -1,0 +1,2 @@
+<center><h1>Task Familiarisation</h1></center>
+<center><p>A reminder of each task before the full session begins.</p></center>

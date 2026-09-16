@@ -1,0 +1,6 @@
+<center><h1>Task 3: Communications</h1></center>
+<center><p>Only respond when you hear <b>your</b> callsign. Ignore all other callsigns.</p></center>
+<center><p>When you hear your callsign, select the correct radio and tune the requested frequency.</p></center>
+<center><p><b>UP/DOWN</b> to select radio &nbsp;•&nbsp; <b>LEFT/RIGHT</b> to adjust frequency</p></center>
+<center><p><b>PRESS ENTER TO CONFIRM</b> your reply.</p></center>
+<center><p>Your response is not sent until you press <b>ENTER</b>.</p></center>

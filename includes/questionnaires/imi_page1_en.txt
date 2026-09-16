@@ -1,0 +1,20 @@
+# Intrinsic Motivation Inventory -- page 1 of 3 (English)
+#
+# Subscales: Perceived Competence (PC), Effort/Importance (EI), Pressure/Tension (PT).
+# Items are interleaved across the three pages rather than blocked by subscale.
+#
+# Titles carry the CSV identity of each item: the _R suffix marks a reverse-scored
+# item and is deliberately absent from the participant-facing question text.
+# Scoring (scripts/analysis/imi_compare_conditions.py): reversed value = 8 - x.
+#
+# Format: Short_title;Question;minLabel/maxLabel;min/max/default/step
+# The 4th value field (step) makes the slider return whole numbers only.
+#
+# Max 6 items per page: the plugin lays questions out at 0.15 of screen height each.
+
+IMI_PC1;I think I am pretty good at this activity.;Not at all true/Very true;1/7/4/1
+IMI_EI1;I put a lot of effort into this.;Not at all true/Very true;1/7/4/1
+IMI_PT1_R;I did not feel nervous at all while doing this.;Not at all true/Very true;1/7/4/1
+IMI_PC2;I think I did pretty well at this activity, compared to other participants.;Not at all true/Very true;1/7/4/1
+IMI_EI2_R;I didn't try very hard to do well at this activity.;Not at all true/Very true;1/7/4/1
+IMI_PT2;I felt very tense while doing this activity.;Not at all true/Very true;1/7/4/1

@@ -1,0 +1,2 @@
+<center><h1>Task 2: Tracking</h1></center>
+<center><p>Use the joystick to keep the crosshair inside the centre box.</p></center>

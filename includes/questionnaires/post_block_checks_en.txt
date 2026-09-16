@@ -1,0 +1,24 @@
+# Post-block sanity checks -- stress and fatigue (English)
+#
+# Two single-item 0-100 sliders shown after every calibration and main-condition
+# run. Neither is a validated instrument; both are manipulation checks.
+#
+#   CHK_STRESS   sanity-checks the threat vs safe stressor manipulation. The
+#                threat/safe assignment is per run, not per block -- see
+#                SAFE_CONDITIONS / THREAT_CONDITIONS in
+#                scripts/analysis/run_threat_of_alarm_validation.py. Companion to
+#                the skin-conductance check, which cannot distinguish a failed
+#                manipulation from an insensitive measure on its own.
+#   CHK_FATIGUE  sanity-checks whether fatigue accumulates across the ~7 runs of a
+#                session, which would confound any contrast whose condition order
+#                is not perfectly balanced.
+#
+# Format: Short_title;Question;minLabel/maxLabel;min/max/default/step
+# The 4th value field (step) makes the slider return whole numbers only.
+#
+# Anchor labels cannot contain '/': the vendor plugin splits that field on it
+# (label_min, label_max = limit_labels.split('/')), so a combined "No stress/fatigue
+# at all" would raise when the screen loads. Hence the per-item wording.
+
+CHK_STRESS;How much psychological stress or tension did you experience during the last block?;No stress at all/Extremely stressed;0/100/50/1
+CHK_FATIGUE;How much mental fatigue or exhaustion did you experience during the last block?;No fatigue at all/Extremely fatigued;0/100/50/1

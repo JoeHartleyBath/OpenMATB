@@ -1,0 +1,8 @@
+# Intrinsic Motivation Inventory -- page 3 of 3 (English)
+# See imi_page1_en.txt for the format and scoring notes.
+
+IMI_PT4;I was anxious while working on this task.;Not at all true/Very true;1/7/4/1
+IMI_PC5;I was pretty skilled at this activity.;Not at all true/Very true;1/7/4/1
+IMI_EI5_R;I didn't put much energy into this.;Not at all true/Very true;1/7/4/1
+IMI_PT5;I felt pressured while doing these.;Not at all true/Very true;1/7/4/1
+IMI_PC6_R;This was an activity that I couldn't do very well.;Not at all true/Very true;1/7/4/1

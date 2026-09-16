@@ -139,15 +139,31 @@ class Slider(AbstractWidget):
         return self.containers['allgroove'].contains_xy(x, y)
 
 
+    def ratio_from_x(self, x):
+        """Map a screen x-coordinate onto the groove's 0-1 span, clamped to it."""
+        x_min = self.containers['allgroove'].l
+        x_max = self.containers['allgroove'].l + self.containers['allgroove'].w
+        x = min(x_max, max(x_min, x))
+        return (x - x_min) / (x_max - x_min)
+
+
     def on_mouse_press(self, x, y, button, modifiers):
         if not self.active:
             return
         if self.coordinates_in_groove_container(x, y) and self.hover is False:
             self.hover = True
-            # A press on the groove counts as touched, so a participant who wants to
-            # keep the default value can still confirm it deliberately.
-            self.touched = True
             self.update_cursor_appearance()
+            # A press jumps the thumb straight to the click position, matching the
+            # click-to-set behaviour of most slider widgets, rather than leaving the
+            # value at its default until a drag moves it. That previous behaviour
+            # let a plain click -- e.g. someone expecting a click-to-jump slider, who
+            # never drags -- register as "touched" while silently logging the
+            # untouched default as if it were a deliberate answer.
+            self.update_groove_value(self.ratio_from_x(x))
+            # update_groove_value skips the touched flag when the click lands on the
+            # value already showing (e.g. exactly on the default): a deliberate press
+            # should still count as an answer even then.
+            self.touched = True
 
 
     def on_mouse_release(self, x, y, button, modifiers):
@@ -162,11 +178,7 @@ class Slider(AbstractWidget):
         if not self.active:
             return
         if self.hover is True:
-            x_min = self.containers['allgroove'].l
-            x_max = self.containers['allgroove'].l + self.containers['allgroove'].w
-            x = min(x_max, max(x_min, x))
-            ratio = (x-x_min)/(x_max-x_min)
-            self.update_groove_value(ratio)
+            self.update_groove_value(self.ratio_from_x(x))
 
 
     def snap_value(self, value):
